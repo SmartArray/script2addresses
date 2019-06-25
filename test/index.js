@@ -1,8 +1,9 @@
-var expect = require('chai').expect
-var crypto = require('crypto')
-var EC = require('elliptic').ec
-var bitcoin = require('bitcoinjs-lib')
+var expect    = require('chai').expect
+var crypto    = require('crypto')
+var EC        = require('elliptic').ec
+var bitcoin   = require('bitcoinjs-lib')
 var bs58check = require('bs58check')
+var bech32    = require('bech32')
 
 var script2addresses = require('../src')
 var isPublicKey = require('../src/publickey')
@@ -53,6 +54,15 @@ function makeHash (pkHex) {
 function makeP2PKHAddress (hash) {
   return bs58check.encode(Buffer.concat([
     new Buffer([bitcoin.networks.bitcoin.pubKeyHash]), new Buffer(hash, 'hex')]))
+}
+
+function makeBech32Address (hash) {
+  var witnessVersion = 0
+  var words = bech32.toWords(new Buffer.from(hash, 'hex'))
+  words.unshift(witnessVersion)
+
+  var bc1Address = bech32.encode('bc', words)
+  return bc1Address
 }
 
 /**
@@ -442,4 +452,21 @@ describe('script2addresses', function () {
       })
     })
   })
+
+  // native segwit
+  describe('witness_v0_keyhash', function () {
+    /* P2WPKH */
+    /* OP_0 , 0x14 , HASH160(PubKey) */
+    it('OP_0 OP_PUSHDATA20 {data}', function () {
+      var pkHex = makeRandom()
+      var script = asm2hex(`OP_${witnessVersion} OP_PUSHDATA20 ${pkHex}`)
+
+      expect(script2addresses(script)).to.deep.equal({
+        type: 'witness_v0_keyhash',
+        addresses: [makeBech32Address(makeHash(pkHex))]
+      })
+    })
+  })
 })
+
+
