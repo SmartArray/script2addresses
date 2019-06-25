@@ -89,20 +89,33 @@ module.exports = function (buf, network, strict) {
 
   var dataSize
   switch (buf[0]) {
-    // P2WPKH (native segwit)
     case opcodes.OP_0:
-      if (buf.length != 22 || buf[1] != 0x14) {
-        break
+      // P2WPKH (native segwit)
+      if (buf.length == 22 && buf[1] == 0x14) {
+        buf = buf.slice(2, buf.length);
+
+        return {
+          type: 'witness_v0_keyhash',
+          addresses: [
+            createSegwitAddress(network.segwit_hrp, buf)
+          ]
+        }
       }
 
-      buf = buf.slice(2, buf.length);
+      // P2WSH
+      if (buf.length == 34 && buf[1] == 0x20) {
+        buf = buf.slice(2, buf.length);
 
-      return {
-        type: 'witness_v0_keyhash',
-        addresses: [
-          createSegwitAddress(network.segwit_hrp, buf)
-        ]
+        return {
+          type: 'witness_v0_scripthash',
+          addresses: [
+            createSegwitAddress(network.segwit_hrp, buf)
+          ]
+        }
       }
+
+
+      break
 
     // pubkeyhash
     case opcodes.OP_DUP:
@@ -130,7 +143,7 @@ module.exports = function (buf, network, strict) {
     case opcodes.OP_HASH160:
       /* P2SH-P2WPKH */
       if (buf.length == 34) {
-        
+
 
         return {
           type: 'witness_v0_scripthash',

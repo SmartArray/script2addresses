@@ -476,14 +476,18 @@ describe('script2addresses', function () {
       var keyHash = makeHash(pkHex)
 
       var witnessScript = asm2hex(`OP_HASH160 aaaaaaaaaaaaaaaa`);
-      var scriptHash = SHA256(witnessScript);
+
+      var scriptHash = crypto
+        .createHash('sha256')
+        .update(Buffer.from(witnessScript, 'hex'))
+        .digest('hex')
 
       // scriptPubKey
       var script = asm2hex(`OP_0 ${scriptHash}`)
 
       expect(script2addresses(script)).to.deep.equal({
         type: 'witness_v0_scripthash',
-        addresses: [makeBech32Address(makeHash(script), 0)]
+        addresses: [makeBech32Address(scriptHash, 0)]
       })
     })
 
