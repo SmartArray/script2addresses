@@ -470,7 +470,7 @@ describe('script2addresses', function () {
     })
 
     /* P2WSH */
-    /* OP_0 , 0x20, HASH160(redeemScript) */
+    /* OP_0 , 0x20, SHA256(redeemScript) */
     it('OP_0 {data}', function () {
       var pkHex = makeRandom()
       var keyHash = makeHash(pkHex)
