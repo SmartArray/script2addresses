@@ -12,6 +12,7 @@ module.exports = function (config) {
       'karma-browserify',
       'karma-chrome-launcher',
       'karma-firefox-launcher',
+      'karma-safari-launcher',
       'karma-detect-browsers',
       'karma-mocha'
     ],
@@ -26,7 +27,7 @@ module.exports = function (config) {
           return ['Firefox']
         }
 
-        var browsers = ['Chrome', 'Firefox']
+        var browsers = ['Chrome', 'Firefox', 'Safari']
         return browsers.filter(function (browser) {
           return availableBrowser.indexOf(browser) !== -1
         })
