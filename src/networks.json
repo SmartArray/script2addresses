@@ -1,14 +1,17 @@
 {
   "mainnet": {
     "pubkeyhash": 0,
-    "scripthash": 5
+    "scripthash": 5,
+    "segwit_hrp": "bc"
   },
   "livenet": {
     "pubkeyhash": 0,
-    "scripthash": 5
+    "scripthash": 5,
+    "segwit_hrp": "bc"
   },
   "testnet": {
     "pubkeyhash": 111,
-    "scripthash": 196
+    "scripthash": 196,
+    "segwit_hrp": "tb"
   }
 }

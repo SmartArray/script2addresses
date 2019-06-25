@@ -1,8 +1,9 @@
 var createHash = require('create-hash')
-var bs58check = require('bs58check')
+var bs58check  = require('bs58check')
+var bech32     = require('bech32')
 
-var networks = require('./networks.json')
-var opcodes = require('./opcodes.json')
+var networks    = require('./networks.json')
+var opcodes     = require('./opcodes.json')
 var isPublicKey = require('./publickey')
 
 /**
@@ -23,6 +24,17 @@ function createAddress (version, hashBuffer) {
   var versionBuffer = new Buffer([version])
   var buffer = Buffer.concat([versionBuffer, hashBuffer])
   return bs58check.encode(buffer)
+}
+
+/**
+ * @param {string} hrp human readable part (e.g. bc for bitcoin mainnet)
+ * @param {Buffer} hashBuffer
+ * @return {string}
+ */
+function createSegwitAddress(hrp, hashBuffer, segwit_version = 0) {
+  var words = bech32.toWords(new Buffer(hashBuffer, 'hex'))
+  words.unshift(segwit_version)
+  return bech32.encode(hrp, words)
 }
 
 /**
@@ -63,7 +75,7 @@ module.exports = function (buf, network, strict) {
     try {
       buf = new Buffer(buf, 'hex')
     } catch (err) {
-      return {type: 'unknow', addresses: []}
+      return {type: 'unknown', addresses: []}
     }
   }
 
@@ -77,6 +89,21 @@ module.exports = function (buf, network, strict) {
 
   var dataSize
   switch (buf[0]) {
+    // P2WPKH (native segwit)
+    case opcodes.OP_0:
+      if (buf.length != 22 || buf[1] != 0x14) {
+        break
+      }
+
+      buf = buf.slice(2, buf.length);
+
+      return {
+        type: 'witness_v0_keyhash',
+        addresses: [
+          createSegwitAddress(network.segwit_hrp, buf)
+        ]
+      }
+
     // pubkeyhash
     case opcodes.OP_DUP:
       if (buf.length < 25 ||
@@ -88,6 +115,7 @@ module.exports = function (buf, network, strict) {
       }
 
       dataSize = readDataSize(buf, 2, strict)
+      console.log(dataSize, dataSize.size)
       if (dataSize === null || dataSize.size !== 20) {
         break
       }
@@ -100,6 +128,17 @@ module.exports = function (buf, network, strict) {
 
     // scripthash
     case opcodes.OP_HASH160:
+      /* P2SH-P2WPKH */
+      if (buf.length == 34) {
+        
+
+        return {
+          type: 'witness_v0_scripthash',
+          addresses: [createAddress(network.pubkeyhash, buf)]
+        }
+      }
+
+      /* P2SH */
       if (buf.length < 23 ||
           buf.length > (strict ? 23 : 27) ||
           buf[buf.length - 1] !== opcodes.OP_EQUAL) {
@@ -175,5 +214,5 @@ module.exports = function (buf, network, strict) {
   }
 
   // unknow output script type
-  return {type: 'unknow', addresses: []}
+  return {type: 'unknown', addresses: []}
 }

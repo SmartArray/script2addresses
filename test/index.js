@@ -56,8 +56,8 @@ function makeP2PKHAddress (hash) {
     new Buffer([bitcoin.networks.bitcoin.pubKeyHash]), new Buffer(hash, 'hex')]))
 }
 
-function makeBech32Address (hash) {
-  var witnessVersion = 0
+function makeBech32Address (hash, witnessVersion) {
+  var witnessVersion = witnessVersion || 0
   var words = bech32.toWords(new Buffer.from(hash, 'hex'))
   words.unshift(witnessVersion)
 
@@ -151,7 +151,7 @@ describe('isPublicKey', function () {
 describe('script2addresses', function () {
   describe('arguments', function () {
     it('not a buffer and neither a string', function () {
-      expect(script2addresses()).to.deep.equal({type: 'unknow', addresses: []})
+      expect(script2addresses()).to.deep.equal({type: 'unknown', addresses: []})
     })
 
     it('apply to buffer', function () {
@@ -204,7 +204,7 @@ describe('script2addresses', function () {
     it('OP_DUP OP_HASH160 OP_PUSHDATA1 {data (19 bytes)} OP_EQUALVERIFY OP_CHECKSIG', function () {
       var script = asm2hex('OP_DUP OP_HASH160 OP_PUSHDATA1 ' + crypto.randomBytes(19).toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
       expect(script2addresses(script)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -213,7 +213,7 @@ describe('script2addresses', function () {
       var pkHex = makeRandom()
       var script = asm2hex('OP_DUP OP_HASH160 OP_PUSHDATA1 ' + makeHash(pkHex) + ' OP_EQUALVERIFY OP_CHECKSIG')
       expect(script2addresses(script, null, true)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -270,7 +270,7 @@ describe('script2addresses', function () {
     it('OP_HASH160 OP_PUSHDATA1 {data (19 bytes)} OP_EQUAL', function () {
       var script = asm2hex('OP_HASH160 OP_PUSHDATA1 ' + crypto.randomBytes(19).toString('hex') + ' OP_EQUAL')
       expect(script2addresses(script)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -279,7 +279,7 @@ describe('script2addresses', function () {
       var pkHex = makeRandom()
       var script = asm2hex('OP_HASH160 OP_PUSHDATA1 ' + makeHash(pkHex) + ' OP_EQUAL')
       expect(script2addresses(script, null, true)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -348,7 +348,7 @@ describe('script2addresses', function () {
     it('OP_PUSHDATA1 {data (32 bytes)} OP_CHECKSIG', function () {
       var script = asm2hex('OP_PUSHDATA1 ' + crypto.randomBytes(32).toString('hex') + ' OP_CHECKSIG')
       expect(script2addresses(script)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -357,7 +357,7 @@ describe('script2addresses', function () {
       var pkHex = makeRandom()
       var script = asm2hex('OP_PUSHDATA1 ' + pkHex + ' OP_CHECKSIG')
       expect(script2addresses(script, null, true)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -418,7 +418,7 @@ describe('script2addresses', function () {
     it('OP_1 OP_PUSHDATA1 {data (32 bytes)} OP_1 OP_CHECKMULTISIG', function () {
       var script = asm2hex('OP_1 OP_PUSHDATA1 ' + crypto.randomBytes(32).toString('hex') + ' OP_1 OP_CHECKMULTISIG')
       expect(script2addresses(script)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -427,7 +427,7 @@ describe('script2addresses', function () {
       var pkHex = makeRandom()
       var script = asm2hex('OP_1 OP_PUSHDATA1 ' + pkHex + ' OP_1 OP_CHECKMULTISIG')
       expect(script2addresses(script, null, true)).to.deep.equal({
-        type: 'unknow',
+        type: 'unknown',
         addresses: []
       })
     })
@@ -454,19 +454,53 @@ describe('script2addresses', function () {
   })
 
   // native segwit
-  describe('witness_v0_keyhash', function () {
+  describe('segwit', function () {
     /* P2WPKH */
     /* OP_0 , 0x14 , HASH160(PubKey) */
-    it('OP_0 OP_PUSHDATA20 {data}', function () {
+    it('OP_0 {data}', function () {
       var pkHex = makeRandom()
-      var script = asm2hex(`OP_${witnessVersion} OP_PUSHDATA20 ${pkHex}`)
+      var pkh = makeHash(pkHex)
+      var scriptStr = `OP_0 ${pkh}`
+      var script = asm2hex(scriptStr)
 
       expect(script2addresses(script)).to.deep.equal({
         type: 'witness_v0_keyhash',
-        addresses: [makeBech32Address(makeHash(pkHex))]
+        addresses: [makeBech32Address(pkh, 0)]
+      })
+    })
+
+    /* P2WSH */
+    /* OP_0 , 0x20, HASH160(redeemScript) */
+    it('OP_0 {data}', function () {
+      var pkHex = makeRandom()
+      var keyHash = makeHash(pkHex)
+
+      var witnessScript = asm2hex(`OP_HASH160 aaaaaaaaaaaaaaaa`);
+      var scriptHash = SHA256(witnessScript);
+
+      // scriptPubKey
+      var script = asm2hex(`OP_0 ${scriptHash}`)
+
+      expect(script2addresses(script)).to.deep.equal({
+        type: 'witness_v0_scripthash',
+        addresses: [makeBech32Address(makeHash(script), 0)]
+      })
+    })
+
+    /* P2SH-P2WPKH ("legacy") */
+    /* OP_HASH160 hash160(redeemScript) OP_EQUAL */
+    it('OP_HASH160 OP_PUSHDATA2 {data} OP_EQUAL', function () {
+      var pkHex = makeRandom()
+      var keyHash = makeHash(pkHex)
+      var redeemScript = asm2hex(`OP_0 OP_PUSHDATA2 ${keyHash}`)
+      var scriptHash = makeHash(redeemScript)
+
+      var script = asm2hex(`OP_HASH160 OP_PUSHDATA2 ${scriptHash} OP_EQUAL`)
+
+      expect(script2addresses(script)).to.deep.equal({
+        type: 'witness_v0_scripthash',
+        addresses: [makeBech32Address(makeHash(script), 0)]
       })
     })
   })
 })
-
-
