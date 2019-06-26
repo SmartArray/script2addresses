@@ -128,7 +128,6 @@ module.exports = function (buf, network, strict) {
       }
 
       dataSize = readDataSize(buf, 2, strict)
-      console.log(dataSize, dataSize.size)
       if (dataSize === null || dataSize.size !== 20) {
         break
       }
