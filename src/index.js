@@ -141,15 +141,6 @@ module.exports = function (buf, network, strict) {
 
     // scripthash
     case opcodes.OP_HASH160:
-      /* P2SH-P2WPKH */
-      if (buf.length == 34) {
-
-
-        return {
-          type: 'witness_v0_scripthash',
-          addresses: [createAddress(network.pubkeyhash, buf)]
-        }
-      }
 
       /* P2SH */
       if (buf.length < 23 ||
@@ -166,7 +157,10 @@ module.exports = function (buf, network, strict) {
       buf = buf.slice(1 + dataSize.bytes, buf.length - 1)
       return {
         type: 'scripthash',
-        addresses: [createAddress(network.scripthash, buf)]
+        addresses: [
+          /* P2SH-P2WPKH */
+          createAddress(network.scripthash, buf)
+        ]
       }
 
     // nulldata

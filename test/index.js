@@ -457,11 +457,11 @@ describe('script2addresses', function () {
   describe('segwit', function () {
     /* P2WPKH */
     /* OP_0 , 0x14 , HASH160(PubKey) */
-    it('OP_0 {data}', function () {
+    it('OP_0 {pubkey-data}', function () {
       var pkHex = makeRandom()
       var pkh = makeHash(pkHex)
-      var scriptStr = `OP_0 ${pkh}`
-      var script = asm2hex(scriptStr)
+
+      var script = asm2hex(`OP_0 ${pkh}`)
 
       expect(script2addresses(script)).to.deep.equal({
         type: 'witness_v0_keyhash',
@@ -471,11 +471,11 @@ describe('script2addresses', function () {
 
     /* P2WSH */
     /* OP_0 , 0x20, SHA256(redeemScript) */
-    it('OP_0 {data}', function () {
+    it('OP_0 {witnesshash-data}', function () {
       var pkHex = makeRandom()
       var keyHash = makeHash(pkHex)
 
-      var witnessScript = asm2hex(`OP_HASH160 aaaaaaaaaaaaaaaa`);
+      var witnessScript = asm2hex(`OP_HASH160 aaaaaaaaaaaaaaaa`); // any redeem script
 
       var scriptHash = crypto
         .createHash('sha256')
@@ -493,17 +493,19 @@ describe('script2addresses', function () {
 
     /* P2SH-P2WPKH ("legacy") */
     /* OP_HASH160 hash160(redeemScript) OP_EQUAL */
-    it('OP_HASH160 OP_PUSHDATA2 {data} OP_EQUAL', function () {
+    /* We don't have to test it anyway, since it is indistinguishable from the normal P2SH,
+     * which means they have the same address type. However, this is just to show  */
+    it('OP_HASH160 {data} OP_EQUAL', function () {
       var pkHex = makeRandom()
       var keyHash = makeHash(pkHex)
-      var redeemScript = asm2hex(`OP_0 OP_PUSHDATA2 ${keyHash}`)
+      var redeemScript = asm2hex(`OP_0 ${keyHash}`)
       var scriptHash = makeHash(redeemScript)
 
-      var script = asm2hex(`OP_HASH160 OP_PUSHDATA2 ${scriptHash} OP_EQUAL`)
+      var script = asm2hex(`OP_HASH160 ${scriptHash} OP_EQUAL`)
 
       expect(script2addresses(script)).to.deep.equal({
-        type: 'witness_v0_scripthash',
-        addresses: [makeBech32Address(makeHash(script), 0)]
+        type: 'scripthash',
+        addresses: [makeP2SHAddress(scriptHash)]
       })
     })
   })
