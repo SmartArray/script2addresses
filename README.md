@@ -18,6 +18,7 @@ npm install script2addresses
   - [`pubkeyhash`](#pubkeyhash)
   - [`scripthash`](#scripthash)
   - [`multisig`](#multisig)
+  - [`segwit`](#segwit)
 
 #####`pubkey`
 
@@ -38,6 +39,16 @@ OP_HASH160 {scriptHash} OP_EQUAL
 m [PublicKeys ...] n OP_CHECKMULTISIG
 
 \**This is only public keys, but we can derive P2PKH addresses*
+
+#####`segwit`
+OP_0 {PublicKeyHash} (P2WPKH)
+
+and
+
+OP_0 {WitnessScriptHash} (P2WSH)
+
+/**Both result in Bech32 addresses, for example bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9*
+
 
 ## API
 
