@@ -47,7 +47,7 @@ and
 
 OP_0 {WitnessScriptHash} (P2WSH)
 
-/**Both result in Bech32 addresses, for example bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9*
+\**Both result in Bech32 addresses, for example bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9*
 
 
 ## API
